@@ -1,0 +1,61 @@
+name: EAS Lite Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      buildId:
+        description: 'Unique build ID'
+        required: true
+      projectName:
+        description: 'Project name'
+        required: true
+      zipUrl:
+        description: 'Firebase signed URL to download the zipped project'
+        required: true
+      platform:
+        description: 'Target platform (android/ios)'
+        required: true
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Download project zip from Firebase
+        run: |
+          curl -L "${{ github.event.inputs.zipUrl }}" --output project.zip
+          unzip project.zip -d app
+          cd app
+          ls -la
+
+      - name: 🟢 Set up Node.js and install deps
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: 🧩 Install Expo CLI
+        run: npm install -g expo-cli
+
+      - name: 📦 Install dependencies
+        working-directory: ./app
+        run: npm install
+
+      - name: ⚒️ Run expo prebuild
+        working-directory: ./app
+        run: npx expo prebuild --platform android --non-interactive
+
+      - name: 🧪 Inject debug keystore
+        working-directory: ./app/android/app
+        run: |
+          echo "Generating debug keystore..."
+          keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Expo,C=US"
+
+      - name: 🏗️ Build APK
+        working-directory: ./app/android
+        run: ./gradlew assembleDebug
+
+      - name: 📤 Upload APK as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.event.inputs.projectName }}-${{ github.event.inputs.buildId }}.apk
+          path: ./app/android/app/build/outputs/apk/debug/app-debug.apk

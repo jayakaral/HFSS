@@ -33,9 +33,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: 🧩 Install Expo CLI
-        run: npm install -g expo-cli
-
       - name: 📦 Install dependencies
         working-directory: ./app
         run: npm install
@@ -48,7 +45,16 @@ jobs:
         working-directory: ./app/android/app
         run: |
           echo "Generating debug keystore..."
-          keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Expo,C=US"
+          rm -f debug.keystore
+          keytool -genkeypair -v \
+            -keystore debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Expo,C=US"
 
       - name: 🏗️ Build APK
         working-directory: ./app/android

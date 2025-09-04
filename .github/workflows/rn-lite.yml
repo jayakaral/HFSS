@@ -15,7 +15,7 @@ on:
 
 jobs:
   build-apk:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Download project zip
